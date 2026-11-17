@@ -5,6 +5,17 @@ WITH periodos AS (
         EXTRACT(YEAR FROM data_reuniao)::INT AS ano,
         CASE WHEN EXTRACT(MONTH FROM data_reuniao) <= 6 THEN 1 ELSE 2 END AS semestre
     FROM reunioes
+),
+pontos_por_morador AS (
+    SELECT 
+        EXTRACT(YEAR FROM r.data_reuniao)::INT AS ano,
+        CASE WHEN EXTRACT(MONTH FROM r.data_reuniao) <= 6 THEN 1 ELSE 2 END AS semestre,
+        pr.morador_id,
+        SUM(er.peso_pontos)::INT AS total_pontos
+    FROM presencas_role pr
+    JOIN eventos_role er ON er.id = pr.evento_id
+    JOIN reunioes r ON r.id = er.reuniao_id
+    GROUP BY 1, 2, pr.morador_id
 )
 SELECT 
     p.ano,
@@ -14,19 +25,17 @@ SELECT
     m.apelido,
     m.turma,
     m.ativo,
-    COALESCE(SUM(er.peso_pontos), 0)::INT AS total_pontos,
+    COALESCE(ppm.total_pontos, 0)::INT AS total_pontos,
     RANK() OVER (
         PARTITION BY p.ano, p.semestre 
-        ORDER BY COALESCE(SUM(er.peso_pontos), 0) DESC
+        ORDER BY COALESCE(ppm.total_pontos, 0) DESC
     )::INT AS posicao_ranking
 FROM periodos p
 CROSS JOIN moradores m
-LEFT JOIN reunioes r 
-    ON EXTRACT(YEAR FROM r.data_reuniao) = p.ano
-    AND (CASE WHEN EXTRACT(MONTH FROM r.data_reuniao) <= 6 THEN 1 ELSE 2 END) = p.semestre
-LEFT JOIN eventos_role er ON er.reuniao_id = r.id
-LEFT JOIN presencas_role pr ON pr.evento_id = er.id AND pr.morador_id = m.id
-GROUP BY p.ano, p.semestre, m.id, m.apelido, m.turma, m.ativo;
+LEFT JOIN pontos_por_morador ppm 
+    ON ppm.ano = p.ano 
+    AND ppm.semestre = p.semestre 
+    AND ppm.morador_id = m.id;
 
 -- View 2: Contagem de Faltas Não Justificadas por Semestre
 CREATE OR REPLACE VIEW vw_faltas_semestral AS
