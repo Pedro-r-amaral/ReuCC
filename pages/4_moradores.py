@@ -3,6 +3,11 @@ from src.database import run_query, execute_command
 
 st.set_page_config(page_title="Moradores - CC", page_icon="👥", layout="wide")
 
+from src.auth import exigir_senha
+
+st.set_page_config(...)  # Mantenha o set_page_config sempre como o 1º comando Streamlit
+exigir_senha()           # Chama a trava de senha logo em seguida
+
 st.title("👥 Gestão de Moradores da República")
 st.markdown("Cadastre novos membros, atualize turmas ou altere o status de moradores ativos/ex-moradores.")
 
