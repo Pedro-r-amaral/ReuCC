@@ -1,12 +1,10 @@
 import streamlit as st
 import plotly.express as px
 from src.database import run_query
+from src.auth import exigir_senha
 
 st.set_page_config(page_title="Placar e Analytics - CC", page_icon="🏆", layout="wide")
 
-from src.auth import exigir_senha
-
-st.set_page_config(...)  # Mantenha o set_page_config sempre como o 1º comando Streamlit
 exigir_senha()           # Chama a trava de senha logo em seguida
 
 st.title("🏆 Placar do Rolê & Analytics da República")

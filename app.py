@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 from src.database import run_query
 from src.pdf_generator import gerar_pdf_ata
+from src.auth import exigir_senha
 
 
 st.set_page_config(
@@ -10,9 +11,6 @@ st.set_page_config(
     layout="wide"
 )
 
-from src.auth import exigir_senha
-
-st.set_page_config(...)  # Mantenha o set_page_config sempre como o 1º comando Streamlit
 exigir_senha()           # Chama a trava de senha logo em seguida
 
 st.title("🏛️ República Casa do Caralho — Sistema de Atas")
