@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import date
 from src.database import run_query
+from src.pdf_generator import gerar_pdf_ata
 
 st.set_page_config(
     page_title="Sistema de Atas - República CC",
@@ -52,15 +53,43 @@ with esq:
         st.dataframe(df_placar, use_container_width=True, hide_index=True)
 
 with dir:
-    st.subheader("📄 Últimas Atas Registradas")
+    st.subheader("📄 Atas Registradas & Exportação PDF")
     df_atas = run_query("""
-        SELECT r.id, r.data_reuniao AS "Data", m.apelido AS "Redator", r.status AS "Status"
+        SELECT r.id, r.data_reuniao, m.apelido AS redator, r.status
         FROM reunioes r
         LEFT JOIN moradores m ON m.id = r.redator_id
         ORDER BY r.data_reuniao DESC
-        LIMIT 10
+        LIMIT 15
     """)
     if df_atas.empty:
         st.write("Nenhuma ata cadastrada ainda. Use o menu lateral para iniciar a primeira reunião.")
     else:
-        st.dataframe(df_atas, use_container_width=True, hide_index=True)
+        opcoes_atas = {
+            f"Ata {row['data_reuniao'].strftime('%d/%m/%Y')} (Redator: {row['redator']})": int(row["id"])
+            for _, row in df_atas.iterrows()
+        }
+        ata_escolhida = st.selectbox("Selecione uma ata para gerar o PDF oficial:", options=list(opcoes_atas.keys()))
+        id_ata_sel = opcoes_atas[ata_escolhida]
+        
+        data_str_arquivo = df_atas[df_atas["id"] == id_ata_sel]["data_reuniao"].iloc[0].strftime("%m_%d")
+        pdf_bytes = gerar_pdf_ata(id_ata_sel)
+        
+        st.download_button(
+            label="📥 Baixar Ata Oficial (.PDF)",
+            data=pdf_bytes,
+            file_name=f"Ata_CC_{data_str_arquivo}.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
+        
+        st.dataframe(
+            df_atas[["data_reuniao", "redator", "status"]],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "data_reuniao": "Data",
+                "redator": "Redator",
+                "status": "Status"
+            }
+        )
